@@ -39,11 +39,18 @@ export function createCharacter(physicsWorld, threeObjects, loadingManager) {
     height: CHARACTER_HEIGHT
   });
   
-  // Create character visual representation (temporary capsule)
+  // Create character visual representation (transparent capsule)
   const mesh = createVisualObject(threeObjects, 'capsule', {
     radius: CHARACTER_RADIUS,
     height: CHARACTER_HEIGHT
   }, position, 0x2194ce);
+  
+  // Make the capsule transparent immediately
+  if (mesh.material) {
+    mesh.material.transparent = true;
+    mesh.material.opacity = 0;
+    mesh.material.needsUpdate = true;
+  }
   
   // Create a direction vector for movement
   const direction = new THREE.Vector3();
@@ -83,6 +90,13 @@ function loadCharacterModel(character, threeObjects, loadingManager) {
   const loader = new FBXLoader(loadingManager);
   const modelPath = '/assets/models/character/ybot.fbx';
   
+  // Make the capsule transparent immediately
+  if (character.mesh && character.mesh.material) {
+    character.mesh.material.transparent = true;
+    character.mesh.material.opacity = 0;
+    character.mesh.material.needsUpdate = true;
+  }
+  
   loader.load(
     modelPath,
     (fbx) => {
@@ -101,10 +115,11 @@ function loadCharacterModel(character, threeObjects, loadingManager) {
       character.model = fbx;
       character.modelLoaded = true;
       
-      // Make the capsule transparent but keep it for physics
-      if (character.mesh.children[0] && character.mesh.children[0].material) {
-        character.mesh.children[0].material.transparent = true;
-        character.mesh.children[0].material.opacity = 0;
+      // Ensure the capsule is completely transparent
+      if (character.mesh.material) {
+        character.mesh.material.transparent = true;
+        character.mesh.material.opacity = 0;
+        character.mesh.material.needsUpdate = true;
       }
     },
     (xhr) => {
