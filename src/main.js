@@ -4,6 +4,7 @@ import { initScene, renderScene, createVisualObject } from './scene.js';
 import { initInput, getInputState, resetMouseMovement } from './input.js';
 import { createCharacter, updateCharacter } from './character.js';
 import { initCamera, updateCamera } from './camera.js';
+import { createEnvironment } from './environment.js';
 
 // Create a canvas element for rendering
 const canvas = document.createElement('canvas');
@@ -39,36 +40,12 @@ async function init() {
   cameraController = initCamera(threeObjects);
   console.log('Camera controller initialized');
   
-  // Create some test objects in the scene
-  createTestEnvironment();
+  // Create the environment
+  createEnvironment(physicsWorld, threeObjects);
+  console.log('Environment created');
   
   // Start the animation loop
   animate();
-}
-
-// Create a test environment with some objects
-function createTestEnvironment() {
-  console.log('Creating test environment');
-  
-  // Create some boxes at different positions
-  createBox({ x: 5, y: 1, z: 5 }, { width: 2, height: 2, depth: 2 }, 0xff0000);
-  createBox({ x: -5, y: 1, z: 5 }, { width: 2, height: 2, depth: 2 }, 0x00ff00);
-  createBox({ x: 0, y: 1, z: -5 }, { width: 2, height: 2, depth: 2 }, 0x0000ff);
-  
-  // Create a platform
-  createBox({ x: 0, y: 0.5, z: -10 }, { width: 10, height: 1, depth: 2 }, 0xffff00);
-  
-  console.log('Test environment created');
-}
-
-// Helper function to create a box with physics
-function createBox(position, size, color) {
-  // Create a physics rigid body for the box
-  const rigidBody = createRigidBody(physicsWorld, position, true); // Static body
-  createCollider(physicsWorld, rigidBody, 'box', size);
-  
-  // Create a visual representation of the box
-  createVisualObject(threeObjects, 'box', size, position, color);
 }
 
 // Animation loop
