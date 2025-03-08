@@ -1,4 +1,6 @@
 // Import necessary modules
+import * as THREE from 'three';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { initPhysics, updatePhysics, createRigidBody, createCollider } from './physics.js';
 import { initScene, renderScene, createVisualObject } from './scene.js';
 import { initInput, getInputState, resetMouseMovement } from './input.js';
@@ -15,10 +17,20 @@ let physicsWorld = null;
 let threeObjects = null;
 let character = null;
 let cameraController = null;
+let loadingManager = null;
 
 // Main initialization function
 async function init() {
   console.log('Initializing 3D Physics-Based Character Controller');
+  
+  // Create a loading manager to track asset loading
+  loadingManager = new THREE.LoadingManager();
+  loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+    console.log(`Loading: ${itemsLoaded}/${itemsTotal} - ${url}`);
+  };
+  loadingManager.onError = (url) => {
+    console.error(`Error loading: ${url}`);
+  };
   
   // Initialize the physics world
   physicsWorld = await initPhysics();
@@ -33,7 +45,7 @@ async function init() {
   console.log('Input handling initialized');
   
   // Create the character controller
-  character = createCharacter(physicsWorld, threeObjects);
+  character = createCharacter(physicsWorld, threeObjects, loadingManager);
   console.log('Character controller created');
   
   // Initialize the camera controller

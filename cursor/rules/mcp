@@ -1,0 +1,16 @@
+# MCP GitHub Push Rules
+
+Rules to ensure consistent pushing to the correct GitHub repository.
+
+## When Pushing to GitHub, Always Push To:
+
+- **Repository Name**: `3D-controller`  
+- **Owner**: `larvuz2`  
+- **Full Repository URL**: `https://github.com/larvuz2/3D-controller`
+
+### How to Ensure This:
+
+1. **Set the Remote (One-Time Setup)**:  
+   If not already set, configure the remote with:  
+   ```bash
+   git remote add origin https://github.com/larvuz2/3D-controller.git

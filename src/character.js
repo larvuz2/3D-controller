@@ -1,5 +1,6 @@
 // Import necessary modules
 import * as THREE from 'three';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { createRigidBody, createCollider } from './physics.js';
 import { createVisualObject } from './scene.js';
 
@@ -15,9 +16,10 @@ const GROUND_CHECK_DISTANCE = 0.1;
  * Create a character controller
  * @param {Object} physicsWorld - The physics world
  * @param {Object} threeObjects - The Three.js objects
+ * @param {Object} loadingManager - Optional Three.js loading manager
  * @returns {Object} The character controller
  */
-export function createCharacter(physicsWorld, threeObjects) {
+export function createCharacter(physicsWorld, threeObjects, loadingManager) {
   console.log('Creating character controller');
   
   // Create character position
@@ -37,7 +39,7 @@ export function createCharacter(physicsWorld, threeObjects) {
     height: CHARACTER_HEIGHT
   });
   
-  // Create character visual representation
+  // Create character visual representation (temporary capsule)
   const mesh = createVisualObject(threeObjects, 'capsule', {
     radius: CHARACTER_RADIUS,
     height: CHARACTER_HEIGHT
@@ -58,12 +60,60 @@ export function createCharacter(physicsWorld, threeObjects) {
     rotation,
     isGrounded: false,
     velocity: new THREE.Vector3(),
-    cameraOffset: new THREE.Vector3(0, 1.5, 0) // Camera offset from character position
+    cameraOffset: new THREE.Vector3(0, 1.5, 0), // Camera offset from character position
+    modelLoaded: false,
+    model: null
   };
+  
+  // Load the character 3D model
+  loadCharacterModel(character, threeObjects, loadingManager);
   
   console.log('Character controller created');
   
   return character;
+}
+
+/**
+ * Load the character 3D model
+ * @param {Object} character - The character controller
+ * @param {Object} threeObjects - The Three.js objects
+ * @param {Object} loadingManager - Optional Three.js loading manager
+ */
+function loadCharacterModel(character, threeObjects, loadingManager) {
+  const loader = new FBXLoader(loadingManager);
+  const modelPath = '/assets/models/character/ybot.fbx';
+  
+  loader.load(
+    modelPath,
+    (fbx) => {
+      console.log('Character model loaded successfully');
+      
+      // Scale the model appropriately
+      fbx.scale.set(0.01, 0.01, 0.01);
+      
+      // Position the model relative to the character's center
+      fbx.position.set(0, -1, 0);
+      
+      // Add the model to the character mesh
+      character.mesh.add(fbx);
+      
+      // Store the model reference
+      character.model = fbx;
+      character.modelLoaded = true;
+      
+      // Make the capsule transparent but keep it for physics
+      if (character.mesh.children[0] && character.mesh.children[0].material) {
+        character.mesh.children[0].material.transparent = true;
+        character.mesh.children[0].material.opacity = 0;
+      }
+    },
+    (xhr) => {
+      console.log(`Character model loading: ${(xhr.loaded / xhr.total) * 100}% loaded`);
+    },
+    (error) => {
+      console.error('Error loading character model:', error);
+    }
+  );
 }
 
 /**
@@ -193,4 +243,14 @@ function updateMeshFromBody(character) {
   
   // Update mesh rotation based on character rotation
   character.mesh.rotation.y = character.rotation.y;
+  
+  // If the model is loaded, update any model-specific animations or properties
+  if (character.modelLoaded && character.model) {
+    // Here you can add code for model animations based on character state
+    // For example, play different animations based on whether the character is:
+    // - idle
+    // - walking
+    // - running
+    // - jumping
+  }
 } 
