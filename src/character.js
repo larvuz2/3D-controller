@@ -45,12 +45,16 @@ export function createCharacter(physicsWorld, threeObjects, loadingManager) {
     height: CHARACTER_HEIGHT
   }, position, 0x2194ce);
   
-  // Make the capsule transparent immediately
+  // Make the capsule transparent immediately and disable its shadow
   if (mesh.material) {
     mesh.material.transparent = true;
     mesh.material.opacity = 0;
     mesh.material.needsUpdate = true;
   }
+  
+  // Disable the capsule shadow
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
   
   // Create a direction vector for movement
   const direction = new THREE.Vector3();
@@ -95,6 +99,10 @@ function loadCharacterModel(character, threeObjects, loadingManager) {
     character.mesh.material.transparent = true;
     character.mesh.material.opacity = 0;
     character.mesh.material.needsUpdate = true;
+    
+    // Disable the capsule shadow
+    character.mesh.castShadow = false;
+    character.mesh.receiveShadow = false;
   }
   
   loader.load(
@@ -106,7 +114,16 @@ function loadCharacterModel(character, threeObjects, loadingManager) {
       fbx.scale.set(0.01, 0.01, 0.01);
       
       // Position the model relative to the character's center
-      fbx.position.set(0, -1, 0);
+      // Adjust the Y position to make the feet touch the ground
+      fbx.position.set(0, -1.8, 0);
+      
+      // Enable shadows for the model
+      fbx.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
       
       // Add the model to the character mesh
       character.mesh.add(fbx);
@@ -121,6 +138,10 @@ function loadCharacterModel(character, threeObjects, loadingManager) {
         character.mesh.material.opacity = 0;
         character.mesh.material.needsUpdate = true;
       }
+      
+      // Ensure the capsule doesn't cast shadows
+      character.mesh.castShadow = false;
+      character.mesh.receiveShadow = false;
     },
     (xhr) => {
       console.log(`Character model loading: ${(xhr.loaded / xhr.total) * 100}% loaded`);
