@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Physics-Based Character Controller</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+    }
+    #instructions {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 5px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="instructions">
+    <h2>Controls</h2>
+    <p>W, A, S, D: Move</p>
+    <p>Space: Jump</p>
+    <p>Mouse: Rotate camera</p>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html> 
