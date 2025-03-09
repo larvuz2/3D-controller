@@ -17,6 +17,9 @@ A physics-based 3D scene featuring a realistic water pond with Ghibli-style toon
 - **Responsive Design**: Adapts to different screen sizes
 - **Performance Optimized**: Efficient rendering and physics calculations
 - **Cross-browser Compatible**: Works on all modern browsers
+- **Advanced Water Simulation**: Realistic water physics with GUI controls for customization
+- **Multiple Wave Patterns**: Overlapping wave patterns for more natural water movement
+- **Caustics Effects**: Simulated underwater light patterns
 
 ## 🎮 Controls
 
@@ -33,6 +36,7 @@ A physics-based 3D scene featuring a realistic water pond with Ghibli-style toon
 - **3D Rendering**: [Three.js](https://threejs.org/) (v0.160.0)
 - **Physics Engine**: [Rapier](https://rapier.rs/) (@dimforge/rapier3d-compat v0.11.2)
 - **Custom Shaders**: GLSL shaders for water effects
+- **GUI Controls**: lil-gui for water parameter adjustments
 - **Build Tool**: [Vite](https://vitejs.dev/) (v5.0.0)
 - **Deployment**: [Netlify](https://www.netlify.com/)
 
@@ -56,7 +60,11 @@ A physics-based 3D scene featuring a realistic water pond with Ghibli-style toon
 │   ├── input.js          # Input handling
 │   ├── main.js           # Application entry point
 │   ├── physics.js        # Physics world with buoyancy simulation
-│   └── scene.js          # Three.js scene with water and sky
+│   ├── scene.js          # Three.js scene with water and sky
+│   ├── water-controls.js # GUI controls for water parameters
+│   ├── water-physics.js  # Advanced water physics simulation
+│   ├── water-shaders.js  # Custom water shader implementation
+│   └── water-implementation.js # Integration helper for water simulation
 ├── index.html            # Main HTML file
 ├── package.json          # Project dependencies
 ├── vite.config.js        # Vite configuration
@@ -124,6 +132,45 @@ npx netlify deploy --prod
    - First pass: Depth information is captured for the water shader
    - Second pass: The scene is rendered with the water shader using the depth information
 
+## 🌊 Water Simulation Features
+
+The water simulation system includes:
+
+- **GUI Controls**: Adjust water parameters in real-time
+- **Visual Properties**: Control water color, sun color, distortion, and transparency
+- **Wave Properties**: Customize wave speed, height, and frequency
+- **Reflection & Refraction**: Adjust reflectivity and refraction ratio
+- **Foam Effects**: Enable/disable foam and customize its appearance
+- **Physics Parameters**: Fine-tune buoyancy force and drag coefficient
+- **Performance Settings**: Adjust texture resolution for different devices
+
+### Using the Water Simulation
+
+To add the water simulation to your scene:
+
+```javascript
+import { addWaterSimulation } from './water-implementation.js';
+
+// After creating your scene and physics world
+const waterSim = addWaterSimulation(scene, world, {
+    waterLevel: 0,
+    waterSize: 100,
+    useEnhancedShaders: true // For advanced effects
+});
+
+// In your animation loop
+function animate(time) {
+    const deltaTime = clock.getDelta();
+    
+    // Update water
+    waterSim.update(deltaTime, time);
+    
+    // Rest of your animation code...
+    
+    requestAnimationFrame(animate);
+}
+```
+
 ## 🎨 Water Shader Details
 
 The water shader implementation is inspired by Studio Ghibli's art style and includes:
@@ -132,6 +179,9 @@ The water shader implementation is inspired by Studio Ghibli's art style and inc
 - **Dynamic Foam**: Foam appears around objects and shores based on depth differences
 - **Wave Animation**: Procedural wave animation for natural water movement
 - **Distortion Effects**: Uses a displacement map for realistic water distortion
+- **Fresnel Effect**: Realistic view-angle dependent reflections
+- **Caustics**: Simulated underwater light patterns
+- **Multiple Wave Patterns**: Overlapping waves for more natural movement
 
 ## 🤝 Contributing
 
@@ -154,3 +204,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [threejs-water-shader-with-foam](https://github.com/romulolink/threejs-water-shader-with-foam) for water shader inspiration
 - [Vite](https://vitejs.dev/) for the build system
 - [Netlify](https://www.netlify.com/) for hosting
+
+Capybara Swim
