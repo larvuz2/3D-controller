@@ -11,6 +11,7 @@ const MOVE_SPEED = 5.0;
 const JUMP_FORCE = 10.0;
 const ROTATION_SPEED = 0.1;
 const GROUND_CHECK_DISTANCE = 0.1;
+const WATER_LEVEL = 0; // Water level at y=0
 
 /**
  * Create a character controller
@@ -22,8 +23,8 @@ const GROUND_CHECK_DISTANCE = 0.1;
 export function createCharacter(physicsWorld, threeObjects, loadingManager) {
   console.log('Creating character controller');
   
-  // Create character position
-  const position = { x: 0, y: CHARACTER_HEIGHT, z: 0 };
+  // Create character position at water level (half-submerged)
+  const position = { x: 0, y: 0, z: 0 }; // Center at water level (y=0)
   
   // Create character physics body
   const rigidBody = createRigidBody(physicsWorld, position);
@@ -70,6 +71,7 @@ export function createCharacter(physicsWorld, threeObjects, loadingManager) {
     direction,
     rotation,
     isGrounded: false,
+    isFloating: true, // New property to track if character is in water
     velocity: new THREE.Vector3(),
     cameraOffset: new THREE.Vector3(0, 1.5, 0), // Camera offset from character position
     modelLoaded: false,

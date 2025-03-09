@@ -7,6 +7,7 @@ import { initInput, getInputState, resetMouseMovement } from './input.js';
 import { createCharacter, updateCharacter } from './character.js';
 import { initCamera, updateCamera } from './camera.js';
 import { createEnvironment } from './environment.js';
+import { initGUI, waterParams } from './gui.js';
 
 // Create a canvas element for rendering
 const canvas = document.createElement('canvas');
@@ -18,10 +19,15 @@ let threeObjects = null;
 let character = null;
 let cameraController = null;
 let loadingManager = null;
+let clock = null;
+let gui = null;
 
 // Main initialization function
 async function init() {
   console.log('Initializing 3D Physics-Based Character Controller');
+  
+  // Create a clock for time-based animations
+  clock = new THREE.Clock();
   
   // Create a loading manager to track asset loading
   loadingManager = new THREE.LoadingManager();
@@ -39,6 +45,10 @@ async function init() {
   // Initialize the Three.js scene
   threeObjects = initScene(canvas);
   console.log('Three.js scene initialized');
+  
+  // Initialize GUI controls
+  gui = initGUI(threeObjects);
+  console.log('GUI controls initialized');
   
   // Initialize input handling
   initInput();
@@ -64,12 +74,15 @@ async function init() {
 function animate() {
   requestAnimationFrame(animate);
   
+  // Get elapsed time for animations
+  const time = clock.getElapsedTime();
+  
   // Get the current input state
   const inputState = getInputState();
   
-  // Update physics simulation
+  // Update physics simulation with character for buoyancy
   if (physicsWorld) {
-    updatePhysics(physicsWorld);
+    updatePhysics(physicsWorld, character);
   }
   
   // Update character based on input and physics
@@ -86,8 +99,9 @@ function animate() {
   resetMouseMovement();
   
   // Update water animation
-  if (threeObjects && threeObjects.water) {
-    threeObjects.water.material.uniforms['time'].value += 1.0 / 60.0;
+  if (threeObjects && threeObjects.water && threeObjects.water.material.uniforms) {
+    // Use the waveSpeed parameter from GUI to control animation speed
+    threeObjects.water.material.uniforms['time'].value += waterParams.waveSpeed / 60.0;
   }
   
   // Render the scene

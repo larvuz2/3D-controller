@@ -5,6 +5,11 @@ import RAPIER from '@dimforge/rapier3d-compat';
 let world = null;
 let groundCollider = null;
 
+// Water physics constants
+const WATER_LEVEL = 0; // Water level at y=0
+const BUOYANCY_FORCE = 20; // Buoyancy force to counteract gravity
+const WATER_DRAG = 2; // Drag coefficient for water resistance
+
 /**
  * Initialize the Rapier physics world
  * @returns {Object} The physics world and objects
@@ -19,9 +24,10 @@ export async function initPhysics() {
   // Create a new physics world with gravity
   world = new RAPIER.World({ x: 0.0, y: -9.81, z: 0.0 });
   
-  // Create a ground plane
+  // Create a ground plane (deep underwater)
   const groundColliderDesc = RAPIER.ColliderDesc.cuboid(50.0, 0.1, 50.0);
   groundCollider = world.createCollider(groundColliderDesc);
+  groundCollider.setTranslation(0, -10, 0); // Move ground deep underwater
   
   console.log('Ground collider created');
   
@@ -35,10 +41,45 @@ export async function initPhysics() {
 /**
  * Update the physics simulation
  * @param {Object} physics - The physics world and objects
+ * @param {Object} character - The character object (optional)
  */
-export function updatePhysics(physics) {
+export function updatePhysics(physics, character = null) {
   // Step the physics simulation (default time step is 1/60)
   physics.world.step();
+  
+  // Apply buoyancy to the character if provided
+  if (character) {
+    applyBuoyancy(physics, character.rigidBody);
+  }
+}
+
+/**
+ * Apply buoyancy force to objects below water level
+ * @param {Object} physics - The physics world and objects
+ * @param {Object} rigidBody - The rigid body to apply buoyancy to
+ */
+function applyBuoyancy(physics, rigidBody) {
+  // Get the current position of the rigid body
+  const position = rigidBody.translation();
+  
+  // Check if the object is below water level
+  if (position.y < WATER_LEVEL) {
+    // Calculate how deep the object is submerged
+    const submergedDepth = WATER_LEVEL - position.y;
+    
+    // Apply upward buoyancy force proportional to submersion depth
+    const upwardForce = { x: 0, y: BUOYANCY_FORCE * submergedDepth, z: 0 };
+    rigidBody.applyImpulse(upwardForce, true);
+    
+    // Apply water resistance (drag)
+    const velocity = rigidBody.linvel();
+    const dragForce = {
+      x: -velocity.x * WATER_DRAG,
+      y: -velocity.y * WATER_DRAG,
+      z: -velocity.z * WATER_DRAG
+    };
+    rigidBody.applyImpulse(dragForce, true);
+  }
 }
 
 /**
@@ -84,6 +125,12 @@ export function createCollider(physics, rigidBody, shape, size) {
     case 'capsule':
       colliderDesc = physics.RAPIER.ColliderDesc.capsule(
         size.height / 2, 
+        size.radius
+      );
+      break;
+    case 'cylinder':
+      colliderDesc = physics.RAPIER.ColliderDesc.cylinder(
+        size.height / 2,
         size.radius
       );
       break;
