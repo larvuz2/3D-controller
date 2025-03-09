@@ -12,20 +12,8 @@ import { createVisualObject } from './scene.js';
 export function createEnvironment(physicsWorld, threeObjects) {
   console.log('Creating environment');
   
-  // Create islands with trees
-  createIslandsWithTrees(physicsWorld, threeObjects);
-  
-  // Load GLB models for environment assets
-  loadEnvironmentAssets(physicsWorld, threeObjects);
-  
-  // Create a floating platform
-  createBox(physicsWorld, threeObjects, 
-    { x: 10, y: 0.5, z: 10 }, 
-    { width: 5, height: 1, depth: 5 }, 
-    0x8B4513, // Brown wooden color
-    null,
-    false // Make it dynamic so it floats
-  );
+  // Load single island in the middle of the scene
+  loadSingleIsland(physicsWorld, threeObjects);
   
   // Create some floating spheres
   createSphere(physicsWorld, threeObjects, 
@@ -46,51 +34,47 @@ export function createEnvironment(physicsWorld, threeObjects) {
 }
 
 /**
- * Load GLB models for environment assets
+ * Load a single island in the middle of the scene
  * @param {Object} physicsWorld - The physics world
  * @param {Object} threeObjects - The Three.js objects
  */
-function loadEnvironmentAssets(physicsWorld, threeObjects) {
+function loadSingleIsland(physicsWorld, threeObjects) {
   const loader = new GLTFLoader();
   
-  // Define island positions
-  const islandPositions = [
-    { x: 30, y: 0, z: 30, scale: 10 },
-    { x: -40, y: 0, z: 20, scale: 15 },
-    { x: 0, y: 0, z: -50, scale: 20 }
-  ];
+  // Define island position in the middle of the scene
+  const islandPosition = { x: 0, y: 0, z: 0 };
+  const islandScale = 15; // Larger scale for a single island
   
   // Load island model
-  // Note: This is a placeholder. You should replace with your actual model path
-  // If the model doesn't exist, it will fail silently and use the procedural islands instead
-  loader.load('/assets/models/island.glb', (gltf) => {
+  loader.load('/models/island.glb', (gltf) => {
     console.log('Island model loaded');
     
-    // Create multiple islands at different positions
-    islandPositions.forEach(pos => {
-      const island = gltf.scene.clone();
-      island.position.set(pos.x, pos.y, pos.z);
-      island.scale.set(pos.scale, pos.scale, pos.scale);
-      threeObjects.scene.add(island);
-      
-      // Add physics collider (approximate with a box)
-      const islandBody = createRigidBody(
-        physicsWorld,
-        { 
-          type: 'fixed',
-          position: { x: pos.x, y: pos.y, z: pos.z }
-        }
-      );
-      
-      createCollider(
-        physicsWorld,
-        islandBody,
-        {
-          shape: 'cuboid',
-          halfExtents: { x: pos.scale * 2, y: pos.scale, z: pos.scale * 2 }
-        }
-      );
-    });
+    // Create a single island in the middle
+    const island = gltf.scene;
+    island.position.set(islandPosition.x, islandPosition.y, islandPosition.z);
+    island.scale.set(islandScale, islandScale, islandScale);
+    threeObjects.scene.add(island);
+    
+    // Add physics collider (approximate with a box)
+    const islandBody = createRigidBody(
+      physicsWorld,
+      { 
+        type: 'fixed',
+        position: islandPosition
+      }
+    );
+    
+    createCollider(
+      physicsWorld,
+      islandBody,
+      {
+        shape: 'cuboid',
+        halfExtents: { x: islandScale * 2, y: islandScale, z: islandScale * 2 }
+      }
+    );
+    
+    // Add some trees on the island
+    addTreesToIsland(physicsWorld, threeObjects, islandPosition, islandScale);
   }, 
   // Progress callback
   (xhr) => {
@@ -99,59 +83,49 @@ function loadEnvironmentAssets(physicsWorld, threeObjects) {
   // Error callback
   (error) => {
     console.warn('Could not load island model:', error);
-    console.log('Using procedural islands instead');
+    console.log('Using procedural island instead');
+    
+    // Fallback to a simple procedural island
+    createSimpleIsland(
+      physicsWorld, 
+      threeObjects, 
+      { x: 0, y: -0.5, z: 0 }, 
+      8, 1.5, 10, 
+      0x8B4513
+    );
   });
-  
-  // Define tree positions
+}
+
+/**
+ * Add trees to the island
+ * @param {Object} physicsWorld - The physics world
+ * @param {Object} threeObjects - The Three.js objects
+ * @param {Object} islandPosition - The position of the island
+ * @param {number} islandScale - The scale of the island
+ */
+function addTreesToIsland(physicsWorld, threeObjects, islandPosition, islandScale) {
+  // Define tree positions relative to the island center
   const treePositions = [
-    { x: 30, y: 10, z: 30, scale: 5 },
-    { x: 35, y: 10, z: 25, scale: 3 },
-    { x: -40, y: 15, z: 20, scale: 4 },
-    { x: -45, y: 15, z: 25, scale: 6 },
-    { x: 0, y: 20, z: -50, scale: 7 },
-    { x: 5, y: 20, z: -55, scale: 4 }
+    { x: 0, y: islandScale, z: 0, scale: 5 },
+    { x: 5, y: islandScale, z: 5, scale: 3 },
+    { x: -5, y: islandScale, z: -5, scale: 4 },
+    { x: -3, y: islandScale, z: 7, scale: 2 },
+    { x: 7, y: islandScale, z: -3, scale: 3.5 }
   ];
   
-  // Load tree model
-  // Note: This is a placeholder. You should replace with your actual model path
-  loader.load('/assets/models/tree.glb', (gltf) => {
-    console.log('Tree model loaded');
-    
-    // Create multiple trees at different positions
-    treePositions.forEach(pos => {
-      const tree = gltf.scene.clone();
-      tree.position.set(pos.x, pos.y, pos.z);
-      tree.scale.set(pos.scale, pos.scale, pos.scale);
-      threeObjects.scene.add(tree);
-      
-      // Add physics collider (approximate with a cylinder)
-      const treeBody = createRigidBody(
-        physicsWorld,
-        { 
-          type: 'fixed',
-          position: { x: pos.x, y: pos.y, z: pos.z }
-        }
-      );
-      
-      createCollider(
-        physicsWorld,
-        treeBody,
-        {
-          shape: 'cylinder',
-          halfHeight: pos.scale * 2,
-          radius: pos.scale * 0.5
-        }
-      );
-    });
-  },
-  // Progress callback
-  (xhr) => {
-    console.log(`Tree model: ${(xhr.loaded / xhr.total * 100)}% loaded`);
-  },
-  // Error callback
-  (error) => {
-    console.warn('Could not load tree model:', error);
-    console.log('Using procedural trees instead');
+  // Create simple trees at these positions
+  treePositions.forEach(pos => {
+    createSimpleTree(
+      physicsWorld, 
+      threeObjects, 
+      { 
+        x: islandPosition.x + pos.x, 
+        y: islandPosition.y + pos.y, 
+        z: islandPosition.z + pos.z 
+      }, 
+      pos.scale, 
+      pos.scale * 0.2
+    );
   });
 }
 
@@ -161,82 +135,8 @@ function loadEnvironmentAssets(physicsWorld, threeObjects) {
  * @param {Object} threeObjects - The Three.js objects
  */
 function createIslandsWithTrees(physicsWorld, threeObjects) {
-  const loader = new GLTFLoader();
-  
-  // Create multiple islands with trees
-  
-  // Main central island
-  const mainIslandPosition = { x: 0, y: -0.5, z: 0 };
-  const mainIsland = createSimpleIsland(physicsWorld, threeObjects, mainIslandPosition, 8, 1.5, 10, 0x8B4513);
-  
-  // Add trees to main island
-  createSimpleTree(physicsWorld, threeObjects, { x: 0, y: 1, z: 0 }, 3, 0.5);
-  createSimpleTree(physicsWorld, threeObjects, { x: 3, y: 1, z: 2 }, 2.5, 0.4);
-  createSimpleTree(physicsWorld, threeObjects, { x: -2, y: 1, z: -3 }, 3.5, 0.6);
-  createSimpleTree(physicsWorld, threeObjects, { x: 4, y: 1, z: -2 }, 2, 0.3);
-  
-  // Small island 1
-  const island1Position = { x: 15, y: -0.5, z: 15 };
-  createSimpleIsland(physicsWorld, threeObjects, island1Position, 4, 1, 5, 0x8B4513);
-  
-  // Add trees to small island 1
-  createSimpleTree(physicsWorld, threeObjects, { x: 15, y: 0.5, z: 15 }, 2.5, 0.4);
-  createSimpleTree(physicsWorld, threeObjects, { x: 17, y: 0.5, z: 14 }, 1.8, 0.3);
-  
-  // Small island 2
-  const island2Position = { x: -15, y: -0.5, z: 10 };
-  createSimpleIsland(physicsWorld, threeObjects, island2Position, 3, 1, 4, 0x8B4513);
-  
-  // Add trees to small island 2
-  createSimpleTree(physicsWorld, threeObjects, { x: -15, y: 0.5, z: 10 }, 2, 0.35);
-  
-  // Small island 3
-  const island3Position = { x: 5, y: -0.5, z: -20 };
-  createSimpleIsland(physicsWorld, threeObjects, island3Position, 5, 1.2, 6, 0x8B4513);
-  
-  // Add trees to small island 3
-  createSimpleTree(physicsWorld, threeObjects, { x: 5, y: 0.7, z: -20 }, 3, 0.5);
-  createSimpleTree(physicsWorld, threeObjects, { x: 7, y: 0.7, z: -18 }, 2.2, 0.4);
-  createSimpleTree(physicsWorld, threeObjects, { x: 3, y: 0.7, z: -22 }, 2.5, 0.45);
-  
-  // Add vegetation to islands
-  addVegetation(threeObjects, mainIslandPosition, 8);
-  addVegetation(threeObjects, island1Position, 4);
-  addVegetation(threeObjects, island2Position, 3);
-  addVegetation(threeObjects, island3Position, 5);
-  
-  // Attempt to load actual models if available
-  try {
-    // Load island model
-    loader.load('/island.glb', (gltf) => {
-      const island = gltf.scene;
-      island.position.set(30, 0, 30); // Base at water level (y=0)
-      island.scale.set(10, 10, 10); // Adjust scale as needed
-      threeObjects.scene.add(island);
-
-      // Add physics collider (approximate with a box)
-      const islandBody = createRigidBody(physicsWorld, { x: 30, y: 0, z: 30 }, true);
-      createCollider(physicsWorld, islandBody, 'box', { width: 10, height: 2, depth: 10 });
-    }, undefined, (error) => {
-      console.warn('Could not load island model:', error);
-    });
-
-    // Load tree model
-    loader.load('/tree.glb', (gltf) => {
-      const tree = gltf.scene;
-      tree.position.set(30, 2, 30); // On island, above water
-      tree.scale.set(5, 5, 5); // Adjust scale
-      threeObjects.scene.add(tree);
-
-      // Add collider for tree
-      const treeBody = createRigidBody(physicsWorld, { x: 30, y: 2, z: 30 }, true);
-      createCollider(physicsWorld, treeBody, 'cylinder', { radius: 0.5, height: 2 });
-    }, undefined, (error) => {
-      console.warn('Could not load tree model:', error);
-    });
-  } catch (error) {
-    console.warn('Error loading models:', error);
-  }
+  // This function is no longer used - we're loading a single island instead
+  console.log('createIslandsWithTrees is deprecated - using loadSingleIsland instead');
 }
 
 /**
