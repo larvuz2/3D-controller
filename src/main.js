@@ -85,6 +85,11 @@ function animate() {
   // Reset mouse movement after processing
   resetMouseMovement();
   
+  // Update water animation
+  if (threeObjects && threeObjects.water) {
+    threeObjects.water.material.uniforms['time'].value += 1.0 / 60.0;
+  }
+  
   // Render the scene
   if (threeObjects) {
     renderScene(threeObjects);
@@ -94,4 +99,4 @@ function animate() {
 // Start the application
 init().catch(error => {
   console.error('Error initializing the application:', error);
-}); 
+});
