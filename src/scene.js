@@ -1,9 +1,11 @@
 // Import Three.js
 import * as THREE from 'three';
+import { Water } from 'three/examples/jsm/objects/Water.js';
+import { Sky } from 'three/examples/jsm/objects/Sky.js';
 
 // Variables to store Three.js objects
 let scene, renderer, camera;
-let ground;
+let ground, water, sky;
 
 /**
  * Initialize the Three.js scene
@@ -15,12 +17,13 @@ export function initScene(canvas) {
   
   // Create scene
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87ceeb); // Sky blue background
   
   // Create renderer
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.5;
   
   // Create camera
   camera = new THREE.PerspectiveCamera(
@@ -36,21 +39,28 @@ export function initScene(canvas) {
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
   
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  directionalLight.position.set(10, 20, 10);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLight.position.set(-1, 1, -1);
   directionalLight.castShadow = true;
+  directionalLight.shadow.mapSize.width = 2048;
+  directionalLight.shadow.mapSize.height = 2048;
+  directionalLight.shadow.camera.near = 0.5;
+  directionalLight.shadow.camera.far = 500;
+  directionalLight.shadow.camera.left = -50;
+  directionalLight.shadow.camera.right = 50;
+  directionalLight.shadow.camera.top = 50;
+  directionalLight.shadow.camera.bottom = -50;
   scene.add(directionalLight);
   
-  // Create ground
-  const groundGeometry = new THREE.PlaneGeometry(100, 100);
-  const groundMaterial = new THREE.MeshStandardMaterial({ 
-    color: 0x3a9d23, // Green color
-    roughness: 0.8,
-  });
-  ground = new THREE.Mesh(groundGeometry, groundMaterial);
-  ground.rotation.x = -Math.PI / 2; // Rotate to be horizontal
-  ground.receiveShadow = true;
-  scene.add(ground);
+  // Create sky
+  sky = createSky();
+  scene.add(sky.mesh);
+  
+  // Create water
+  water = createWater();
+  scene.add(water);
+  
+  // Remove ground plane as we're using water as the base
   
   // Handle window resize
   window.addEventListener('resize', () => {
@@ -65,8 +75,62 @@ export function initScene(canvas) {
     scene,
     renderer,
     camera,
-    ground
+    water
   };
+}
+
+/**
+ * Create a realistic sky
+ * @returns {Object} The sky object
+ */
+function createSky() {
+  const sky = new Sky();
+  sky.scale.setScalar(10000);
+  
+  const skyUniforms = sky.material.uniforms;
+  skyUniforms['turbidity'].value = 10;
+  skyUniforms['rayleigh'].value = 2;
+  skyUniforms['mieCoefficient'].value = 0.005;
+  skyUniforms['mieDirectionalG'].value = 0.8;
+  
+  const sun = new THREE.Vector3();
+  const phi = THREE.MathUtils.degToRad(88);
+  const theta = THREE.MathUtils.degToRad(180);
+  
+  sun.setFromSphericalCoords(1, phi, theta);
+  skyUniforms['sunPosition'].value.copy(sun);
+  
+  return { mesh: sky, uniforms: skyUniforms, sun };
+}
+
+/**
+ * Create a realistic water surface
+ * @returns {Object} The water object
+ */
+function createWater() {
+  const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
+  
+  const water = new Water(waterGeometry, {
+    textureWidth: 512,
+    textureHeight: 512,
+    waterNormals: new THREE.TextureLoader().load(
+      '/textures/water/waternormals.jpg',
+      (texture) => {
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      }
+    ),
+    sunDirection: new THREE.Vector3(0.70, 0.25, 0.60),
+    sunColor: 0xffffff,
+    waterColor: 0x001e0f, // Dark greenish water
+    distortionScale: 3.7,
+    fog: false,
+    alpha: 0.9 // Slightly transparent water
+  });
+  
+  water.rotation.x = -Math.PI / 2; // Rotate to lie flat
+  water.position.y = 0; // Water level at y=0
+  
+  return water;
 }
 
 /**
@@ -108,7 +172,11 @@ export function createVisualObject(threeObjects, shape, size, position, color = 
       throw new Error(`Unsupported visual shape: ${shape}`);
   }
   
-  const material = new THREE.MeshStandardMaterial({ color });
+  const material = new THREE.MeshStandardMaterial({ 
+    color,
+    roughness: 0.7,
+    metalness: 0.2
+  });
   mesh = new THREE.Mesh(geometry, material);
   
   mesh.position.set(position.x, position.y, position.z);
@@ -118,4 +186,4 @@ export function createVisualObject(threeObjects, shape, size, position, color = 
   threeObjects.scene.add(mesh);
   
   return mesh;
-} 
+}
