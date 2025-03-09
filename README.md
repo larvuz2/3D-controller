@@ -1,12 +1,13 @@
-# 3D Physics-Based Water Pond Scene
+# 3D Physics-Based Water Pond Scene with Ghibli-Style Shader
 
-A physics-based 3D scene featuring a realistic water pond with naturally moving water, islands topped with trees, and a character that floats half-submerged in the water. Built with Three.js and Rapier physics engine.
+A physics-based 3D scene featuring a realistic water pond with Ghibli-style toon shading, foam effects, naturally moving water, islands topped with trees, and a character that floats half-submerged in the water. Built with Three.js and Rapier physics engine.
 
 ![3D Water Pond Scene](https://github.com/larvuz2/3D-controller/raw/main/public/screenshot.png)
 
 ## 🌟 Features
 
-- **Realistic Water Surface**: Beautiful water with natural movement, waves, and reflections
+- **Ghibli-Style Water Shader**: Beautiful stylized water with toon shading inspired by Studio Ghibli
+- **Foam Effects**: Dynamic foam that appears around objects and shores
 - **Physics-based Buoyancy**: Character floats realistically in water with simulated buoyancy
 - **Islands with Trees**: Multiple islands with trees and vegetation scattered throughout the pond
 - **Intuitive Controls**: WASD for movement, Space for jumping
@@ -31,6 +32,7 @@ A physics-based 3D scene featuring a realistic water pond with naturally moving 
 - **Frontend Framework**: Vanilla JavaScript
 - **3D Rendering**: [Three.js](https://threejs.org/) (v0.160.0)
 - **Physics Engine**: [Rapier](https://rapier.rs/) (@dimforge/rapier3d-compat v0.11.2)
+- **Custom Shaders**: GLSL shaders for water effects
 - **Build Tool**: [Vite](https://vitejs.dev/) (v5.0.0)
 - **Deployment**: [Netlify](https://www.netlify.com/)
 
@@ -39,7 +41,14 @@ A physics-based 3D scene featuring a realistic water pond with naturally moving 
 ```
 3D-controller/
 ├── public/               # Static assets
+│   ├── shaders/          # GLSL shader files
+│   │   ├── waterVertexShader.glsl
+│   │   └── waterFragmentShader.glsl
 │   └── textures/         # Textures for water and other materials
+│       └── water/
+│           ├── waternormals.jpg
+│           └── foam/
+│               └── dudvMap.png
 ├── src/                  # Source code
 │   ├── camera.js         # Camera controller
 │   ├── character.js      # Character controller with buoyancy
@@ -104,14 +113,25 @@ npx netlify deploy --prod
 
 ## 🧠 How It Works
 
-1. The application initializes the Three.js scene with a realistic water surface and sky
+1. The application initializes the Three.js scene with a Ghibli-style water shader and sky
 2. Islands with trees and vegetation are created and positioned above the water
 3. A character is created with both a visual representation (Three.js) and a physics body (Rapier)
 4. Buoyancy forces are applied to objects below the water level to simulate floating
 5. Input from the keyboard and mouse is captured and processed
 6. The character's position and rotation are updated based on the physics simulation
 7. The camera follows the character's movement
-8. The scene is rendered at each animation frame, with the water's surface animated
+8. The scene is rendered with a two-pass approach:
+   - First pass: Depth information is captured for the water shader
+   - Second pass: The scene is rendered with the water shader using the depth information
+
+## 🎨 Water Shader Details
+
+The water shader implementation is inspired by Studio Ghibli's art style and includes:
+
+- **Toon Shading**: Creates distinct bands of color for a stylized look
+- **Dynamic Foam**: Foam appears around objects and shores based on depth differences
+- **Wave Animation**: Procedural wave animation for natural water movement
+- **Distortion Effects**: Uses a displacement map for realistic water distortion
 
 ## 🤝 Contributing
 
@@ -131,5 +151,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - [Three.js](https://threejs.org/) for 3D rendering
 - [Rapier](https://rapier.rs/) for physics simulation
+- [threejs-water-shader-with-foam](https://github.com/romulolink/threejs-water-shader-with-foam) for water shader inspiration
 - [Vite](https://vitejs.dev/) for the build system
 - [Netlify](https://www.netlify.com/) for hosting
