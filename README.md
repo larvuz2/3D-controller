@@ -1,14 +1,16 @@
-# 3D Physics-Based Character Controller
+# 3D Physics-Based Water Pond Scene
 
-A physics-based 3D character controller built with Three.js and Rapier physics engine. This project demonstrates how to create a responsive character that moves with WASD controls and jumps with the space bar, all while respecting realistic physics constraints.
+A physics-based 3D scene featuring a realistic water pond with naturally moving water, islands topped with trees, and a character that floats half-submerged in the water. Built with Three.js and Rapier physics engine.
 
-![3D Character Controller](https://github.com/larvuz2/3D-controller/raw/main/public/screenshot.png)
+![3D Water Pond Scene](https://github.com/larvuz2/3D-controller/raw/main/public/screenshot.png)
 
 ## 🌟 Features
 
-- **Physics-based Movement**: Realistic character movement using the Rapier physics engine
+- **Realistic Water Surface**: Beautiful water with natural movement, waves, and reflections
+- **Physics-based Buoyancy**: Character floats realistically in water with simulated buoyancy
+- **Islands with Trees**: Multiple islands with trees and vegetation scattered throughout the pond
 - **Intuitive Controls**: WASD for movement, Space for jumping
-- **Collision Detection**: Accurate collision handling with the environment
+- **Collision Detection**: Accurate collision handling with islands and objects
 - **Camera Controls**: Orbit camera that follows the character
 - **3D Rendering**: High-quality graphics with Three.js
 - **Responsive Design**: Adapts to different screen sizes
@@ -37,14 +39,15 @@ A physics-based 3D character controller built with Three.js and Rapier physics e
 ```
 3D-controller/
 ├── public/               # Static assets
+│   └── textures/         # Textures for water and other materials
 ├── src/                  # Source code
 │   ├── camera.js         # Camera controller
-│   ├── character.js      # Character controller
-│   ├── environment.js    # Environment setup
+│   ├── character.js      # Character controller with buoyancy
+│   ├── environment.js    # Islands, trees, and vegetation setup
 │   ├── input.js          # Input handling
 │   ├── main.js           # Application entry point
-│   ├── physics.js        # Physics world setup
-│   └── scene.js          # Three.js scene setup
+│   ├── physics.js        # Physics world with buoyancy simulation
+│   └── scene.js          # Three.js scene with water and sky
 ├── index.html            # Main HTML file
 ├── package.json          # Project dependencies
 ├── vite.config.js        # Vite configuration
@@ -101,13 +104,14 @@ npx netlify deploy --prod
 
 ## 🧠 How It Works
 
-1. The application initializes the Three.js scene and Rapier physics world
-2. A character is created with both a visual representation (Three.js) and a physics body (Rapier)
-3. Input from the keyboard and mouse is captured and processed
-4. The physics simulation applies forces to the character based on input
-5. The character's position and rotation are updated based on the physics simulation
-6. The camera follows the character's movement
-7. The scene is rendered at each animation frame
+1. The application initializes the Three.js scene with a realistic water surface and sky
+2. Islands with trees and vegetation are created and positioned above the water
+3. A character is created with both a visual representation (Three.js) and a physics body (Rapier)
+4. Buoyancy forces are applied to objects below the water level to simulate floating
+5. Input from the keyboard and mouse is captured and processed
+6. The character's position and rotation are updated based on the physics simulation
+7. The camera follows the character's movement
+8. The scene is rendered at each animation frame, with the water's surface animated
 
 ## 🤝 Contributing
 
