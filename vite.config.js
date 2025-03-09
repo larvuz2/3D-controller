@@ -1,8 +1,8 @@
-// vite.config.js
-export default {
-  root: './',
-  publicDir: 'public',
-  server: {
-    host: true
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  base: './',
+  build: {
+    outDir: 'dist'
   }
-} 
+})
