@@ -1,11 +1,18 @@
 // Import Three.js
 import * as THREE from 'three';
-import { Water } from 'three/examples/jsm/objects/Water.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 
 // Variables to store Three.js objects
 let scene, renderer, camera;
-let ground, water, sky;
+let water, sky;
+let renderTarget, depthMaterial;
+
+// Water shader parameters
+const waterParams = {
+  foamColor: 0xffffff,
+  waterColor: 0x14c6a5,
+  threshold: 0.1
+};
 
 /**
  * Initialize the Three.js scene
@@ -56,17 +63,38 @@ export function initScene(canvas) {
   sky = createSky();
   scene.add(sky.mesh);
   
-  // Create water
-  water = createWater();
-  scene.add(water);
+  // Setup render target for depth texture
+  setupRenderTarget();
   
-  // Remove ground plane as we're using water as the base
+  // Create depth material for water shader
+  depthMaterial = new THREE.MeshDepthMaterial();
+  depthMaterial.depthPacking = THREE.RGBADepthPacking;
+  depthMaterial.blending = THREE.NoBlending;
+  
+  // Create water with foam shader
+  water = createWaterWithFoam();
+  scene.add(water);
   
   // Handle window resize
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    
+    // Update render target size
+    const pixelRatio = renderer.getPixelRatio();
+    renderTarget.setSize(
+      window.innerWidth * pixelRatio,
+      window.innerHeight * pixelRatio
+    );
+    
+    // Update water shader resolution
+    if (water && water.material.uniforms) {
+      water.material.uniforms.resolution.value.set(
+        window.innerWidth * pixelRatio,
+        window.innerHeight * pixelRatio
+      );
+    }
   });
   
   console.log('Three.js scene initialized');
@@ -75,8 +103,36 @@ export function initScene(canvas) {
     scene,
     renderer,
     camera,
-    water
+    water,
+    depthMaterial,
+    renderTarget
   };
+}
+
+/**
+ * Setup render target for depth texture
+ */
+function setupRenderTarget() {
+  const pixelRatio = renderer.getPixelRatio();
+  
+  renderTarget = new THREE.WebGLRenderTarget(
+    window.innerWidth * pixelRatio,
+    window.innerHeight * pixelRatio
+  );
+  renderTarget.texture.minFilter = THREE.NearestFilter;
+  renderTarget.texture.magFilter = THREE.NearestFilter;
+  renderTarget.texture.generateMipmaps = false;
+  renderTarget.stencilBuffer = false;
+  
+  // Check if depth texture extension is supported
+  const supportsDepthTextureExtension = !!renderer.extensions.get("WEBGL_depth_texture");
+  
+  if (supportsDepthTextureExtension) {
+    renderTarget.depthTexture = new THREE.DepthTexture();
+    renderTarget.depthTexture.type = THREE.UnsignedShortType;
+    renderTarget.depthTexture.minFilter = THREE.NearestFilter;
+    renderTarget.depthTexture.maxFilter = THREE.NearestFilter;
+  }
 }
 
 /**
@@ -104,40 +160,103 @@ function createSky() {
 }
 
 /**
- * Create a realistic water surface
+ * Create water with foam shader
  * @returns {Object} The water object
  */
-function createWater() {
+function createWaterWithFoam() {
+  // Load shader files
+  const vertexShader = loadShader('/shaders/waterVertexShader.glsl');
+  const fragmentShader = loadShader('/shaders/waterFragmentShader.glsl');
+  
+  // Load dudv map texture
+  const dudvMap = new THREE.TextureLoader().load('/textures/water/foam/dudvMap.png');
+  dudvMap.wrapS = dudvMap.wrapT = THREE.RepeatWrapping;
+  
+  // Create water geometry
   const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
   
-  const water = new Water(waterGeometry, {
-    textureWidth: 512,
-    textureHeight: 512,
-    waterNormals: new THREE.TextureLoader().load(
-      '/textures/water/waternormals.jpg',
-      (texture) => {
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  // Check if depth texture extension is supported
+  const supportsDepthTextureExtension = !!renderer.extensions.get("WEBGL_depth_texture");
+  
+  // Create water material with custom shader
+  const waterMaterial = new THREE.ShaderMaterial({
+    defines: {
+      DEPTH_PACKING: supportsDepthTextureExtension ? 0 : 1,
+      ORTHOGRAPHIC_CAMERA: 0
+    },
+    uniforms: THREE.UniformsUtils.merge([
+      THREE.UniformsLib["fog"],
+      {
+        time: { value: 0 },
+        threshold: { value: waterParams.threshold },
+        tDudv: { value: dudvMap },
+        tDepth: {
+          value: supportsDepthTextureExtension
+            ? renderTarget.depthTexture
+            : renderTarget.texture
+        },
+        cameraNear: { value: camera.near },
+        cameraFar: { value: camera.far },
+        resolution: {
+          value: new THREE.Vector2(
+            window.innerWidth * renderer.getPixelRatio(),
+            window.innerHeight * renderer.getPixelRatio()
+          )
+        },
+        foamColor: { value: new THREE.Color(waterParams.foamColor) },
+        waterColor: { value: new THREE.Color(waterParams.waterColor) }
       }
-    ),
-    sunDirection: new THREE.Vector3(0.70, 0.25, 0.60),
-    sunColor: 0xffffff,
-    waterColor: 0x001e0f, // Dark greenish water
-    distortionScale: 3.7,
-    fog: false,
-    alpha: 0.9 // Slightly transparent water
+    ]),
+    vertexShader: vertexShader,
+    fragmentShader: fragmentShader,
+    fog: true
   });
   
-  water.rotation.x = -Math.PI / 2; // Rotate to lie flat
-  water.position.y = 0; // Water level at y=0
+  // Create water mesh
+  const waterMesh = new THREE.Mesh(waterGeometry, waterMaterial);
+  waterMesh.rotation.x = -Math.PI / 2; // Rotate to lie flat
+  waterMesh.position.y = 0; // Water level at y=0
   
-  return water;
+  return waterMesh;
 }
 
 /**
- * Render the scene
+ * Load shader from file
+ * @param {string} path - Path to the shader file
+ * @returns {string} The shader code
+ */
+function loadShader(path) {
+  let shader = '';
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', path, false);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      shader = xhr.responseText;
+    }
+  };
+  xhr.send(null);
+  return shader;
+}
+
+/**
+ * Render the scene with water shader
  * @param {Object} threeObjects - The Three.js objects
  */
 export function renderScene(threeObjects) {
+  // Depth pass for water shader
+  if (threeObjects.water) {
+    threeObjects.water.visible = false; // Hide water for depth pass
+    threeObjects.scene.overrideMaterial = threeObjects.depthMaterial;
+    
+    threeObjects.renderer.setRenderTarget(threeObjects.renderTarget);
+    threeObjects.renderer.render(threeObjects.scene, threeObjects.camera);
+    threeObjects.renderer.setRenderTarget(null);
+    
+    threeObjects.scene.overrideMaterial = null;
+    threeObjects.water.visible = true;
+  }
+  
+  // Beauty pass
   threeObjects.renderer.render(threeObjects.scene, threeObjects.camera);
 }
 

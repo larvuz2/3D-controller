@@ -18,10 +18,14 @@ let threeObjects = null;
 let character = null;
 let cameraController = null;
 let loadingManager = null;
+let clock = null;
 
 // Main initialization function
 async function init() {
   console.log('Initializing 3D Physics-Based Character Controller');
+  
+  // Create a clock for time-based animations
+  clock = new THREE.Clock();
   
   // Create a loading manager to track asset loading
   loadingManager = new THREE.LoadingManager();
@@ -64,6 +68,9 @@ async function init() {
 function animate() {
   requestAnimationFrame(animate);
   
+  // Get elapsed time for animations
+  const time = clock.getElapsedTime();
+  
   // Get the current input state
   const inputState = getInputState();
   
@@ -86,8 +93,8 @@ function animate() {
   resetMouseMovement();
   
   // Update water animation
-  if (threeObjects && threeObjects.water) {
-    threeObjects.water.material.uniforms['time'].value += 1.0 / 60.0;
+  if (threeObjects && threeObjects.water && threeObjects.water.material.uniforms) {
+    threeObjects.water.material.uniforms.time.value = time;
   }
   
   // Render the scene
