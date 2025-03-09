@@ -11,6 +11,7 @@ const MOVE_SPEED = 5.0;
 const JUMP_FORCE = 10.0;
 const ROTATION_SPEED = 0.1;
 const GROUND_CHECK_DISTANCE = 0.1;
+const WATER_LEVEL = 0; // Water level at y=0
 
 /**
  * Create a character controller
@@ -22,8 +23,8 @@ const GROUND_CHECK_DISTANCE = 0.1;
 export function createCharacter(physicsWorld, threeObjects, loadingManager) {
   console.log('Creating character controller');
   
-  // Create character position
-  const position = { x: 0, y: CHARACTER_HEIGHT, z: 0 };
+  // Create character position at water level (half-submerged)
+  const position = { x: 0, y: 0, z: 0 }; // Center at water level (y=0)
   
   // Create character physics body
   const rigidBody = createRigidBody(physicsWorld, position);
@@ -70,6 +71,7 @@ export function createCharacter(physicsWorld, threeObjects, loadingManager) {
     direction,
     rotation,
     isGrounded: false,
+    isFloating: true, // New property to track if character is in water
     velocity: new THREE.Vector3(),
     cameraOffset: new THREE.Vector3(0, 1.5, 0), // Camera offset from character position
     modelLoaded: false,
@@ -250,43 +252,35 @@ function applyMovement(character, inputState) {
   // Get current velocity
   const velocity = character.rigidBody.linvel();
   
-  // Calculate new velocity based on movement direction
-  const newVelocity = {
+  // Apply movement force in the direction of movement
+  const movementForce = {
     x: character.direction.x * MOVE_SPEED,
-    y: velocity.y, // Maintain vertical velocity
+    y: velocity.y, // Preserve vertical velocity
     z: character.direction.z * MOVE_SPEED
   };
   
-  // Apply jump if grounded and jump button pressed
-  if (character.isGrounded && inputState.jump) {
-    newVelocity.y = JUMP_FORCE;
+  // Apply jump force if jumping and grounded
+  if (inputState.jump && character.isGrounded) {
+    movementForce.y = JUMP_FORCE;
   }
   
-  // Apply the new velocity to the rigid body
-  character.rigidBody.setLinvel(newVelocity, true);
+  // Set the character's velocity
+  character.rigidBody.setLinvel(movementForce, true);
+  
+  // Store velocity for reference
+  character.velocity.set(movementForce.x, movementForce.y, movementForce.z);
 }
 
 /**
- * Update mesh position and rotation based on physics body
+ * Update the mesh position and rotation based on the physics body
  * @param {Object} character - The character controller
  */
 function updateMeshFromBody(character) {
-  // Get position from rigid body
+  // Get the position and rotation from the physics body
   const position = character.rigidBody.translation();
+  const rotation = character.rigidBody.rotation();
   
-  // Update mesh position
+  // Update the mesh position and rotation
   character.mesh.position.set(position.x, position.y, position.z);
-  
-  // Update mesh rotation based on character rotation
-  character.mesh.rotation.y = character.rotation.y;
-  
-  // If the model is loaded, update any model-specific animations or properties
-  if (character.modelLoaded && character.model) {
-    // Here you can add code for model animations based on character state
-    // For example, play different animations based on whether the character is:
-    // - idle
-    // - walking
-    // - running
-    // - jumping
-  }
-} 
+  character.mesh.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+}

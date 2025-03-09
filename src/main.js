@@ -67,9 +67,9 @@ function animate() {
   // Get the current input state
   const inputState = getInputState();
   
-  // Update physics simulation
+  // Update physics simulation with character for buoyancy
   if (physicsWorld) {
-    updatePhysics(physicsWorld);
+    updatePhysics(physicsWorld, character);
   }
   
   // Update character based on input and physics
