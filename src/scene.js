@@ -1,9 +1,10 @@
 // Import Three.js
 import * as THREE from 'three';
+import { Water } from 'three/examples/jsm/objects/Water.js';
 
 // Variables to store Three.js objects
 let scene, renderer, camera;
-let ground;
+let ground, water;
 
 /**
  * Initialize the Three.js scene
@@ -41,6 +42,28 @@ export function initScene(canvas) {
   directionalLight.castShadow = true;
   scene.add(directionalLight);
   
+  // Create water
+  const waterGeometry = new THREE.PlaneGeometry(10000, 10000); // Large plane for the pond
+  water = new Water(waterGeometry, {
+    textureWidth: 512,
+    textureHeight: 512,
+    waterNormals: new THREE.TextureLoader().load(
+      '/textures/water/waternormals.jpg',
+      (texture) => {
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      }
+    ),
+    alpha: 1.0,
+    sunDirection: new THREE.Vector3(0, 1, 0), // Sun direction for lighting
+    sunColor: 0xffffff,
+    waterColor: 0x001e0f, // Dark greenish water
+    distortionScale: 3.7,
+    fog: scene.fog !== undefined,
+  });
+  water.rotation.x = -Math.PI / 2; // Rotate to lie flat
+  water.position.y = 0; // Water level at y=0
+  scene.add(water);
+  
   // Create ground
   const groundGeometry = new THREE.PlaneGeometry(100, 100);
   const groundMaterial = new THREE.MeshStandardMaterial({ 
@@ -65,7 +88,8 @@ export function initScene(canvas) {
     scene,
     renderer,
     camera,
-    ground
+    ground,
+    water
   };
 }
 
